@@ -1,0 +1,17 @@
+[package]
+name = "serde_can"
+version = "0.0.1"
+edition = "2024"
+
+
+license = "MIT OR APACHE-2.0"
+description = "Convenient library for Serialize & deserialize CAN message"
+homepage = ""
+repository = ""
+readme = "README.org"
+
+categories = ["embedded", "hardware-support", "no-std"]
+
+[dependencies]
+embedded-can = "0.4.1"
+serde = { version = "1.0", default-features = false }

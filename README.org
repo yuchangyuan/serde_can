@@ -1,0 +1,56 @@
+#+title: Serialize & Deserialize CAN message with serde
+
+* Wire format
+Wire format is modified from [[https://postcard.jamesmunns.com/][postcard]] to better work with 8 byte length limitation of CAN message.
+** Tagged Union
+See "Tagged Unions" part description of postcard wire specification, only different is we store the tag use only 4 bits.
+** Serde Data Model Types
+*** bool
+store as 1 bit, =false= as =0=, =true= as =1=.
+*** i8/u8
+store as 1 byte, 8 bits.
+*** i16/u16
+store as 2 bytes, 16 bits, big endian.
+*** i32/u32
+store as 4 bytes, 32 bits, big endian.
+*** i64/u64
+store as 8 bytes, 64 bits, big endian.
+*** i128/u128
+*not support*.
+*** f32
+store as 4 bytes.
+*** f64
+store as 8 bytes.
+*** char
+as string with length of 1.
+*** string
+encoded with 3 bit length, followed by array of bytes.
+*** byte array
+same as string.
+*** option
+=None= encoded as 1 bit =0=, =Some= encoded as 1 bit =1= followed by actual
+value inside.
+*** unit
+does not encoded to the wire.
+*** unit_struct
+same as =unit=.
+*** uint_variant
+a instance of =Tagged Union=, with 4 bit tag.
+*** newtype_struct
+encoded as the actual data it contains.
+*** newtype_variant
+a instance of =Tagged Union=, with 4 bit tag.
+*** seq
+4 bit length of seq follwed by encoded array elements.
+*** tuple
+encoded as element inside tuple, in left to right order
+*** tuple_struct
+encoded as =tuple=.
+*** tuple_variant
+a instance of =Tagged Union= with 4 bit tag.
+*** map
+*not support*.
+*** struct
+same as =tuple=, only encode the element inside struct.
+*** struct_variant
+a inside of =Tagged Union= with 4 bit tag.
