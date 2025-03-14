@@ -31,12 +31,12 @@ fn t_unit() {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     enum E { A, B, }
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
-    struct S {}
+    struct S;
 
     pass(&(), &[]);
     pass(&E::A, &[0 << 4]);
     pass(&E::B, &[1 << 4]);
-    pass(&(S {}), &[]);
+    pass(&(S), &[]);
 }
 
 #[test]
@@ -189,4 +189,20 @@ fn t_enum() {
     pass(&E::B(-2, 0x1234), &[0x1f, 0xff, 0xe1, 0x23, 0x40]);
     pass(&E::C {x: -0x5679, y: [0x12, 0x34]}, &[0x2a, 0x98, 0x71, 0x23, 0x40]);
     pass(&E::D(0x8765_4321), &[0x38, 0x76, 0x54, 0x32, 0x10]);
+}
+
+#[test]
+fn t_option() {
+    //#[derive(Deserialize, Serialize, PartialEq, Debug)]
+    type T1 = Option<u32>;
+    type T2 = (T1, u16);
+    let a: T1  = None;
+    let b: T2 = (None, 0x8765);
+    let c: T1 = Some(0x2345_6789);
+    let d: T2 = (Some(0x5678_4321), 0xa987);
+
+    pass(&a, &[0x0]);
+    pass(&b, &[0x43, 0xb2, 0x80]);
+    pass(&c, &[0x91, 0xa2, 0xb3, 0xc4, 0x80]);
+    pass(&d, &[0xab, 0x3c, 0x21, 0x90, 0xd4, 0xc3, 0x80]);
 }

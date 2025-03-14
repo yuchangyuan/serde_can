@@ -97,4 +97,9 @@ mod test {
     fn de_msg_too_long() {
         e_de::<[u8; 9]>(&[0; 9], Error::DeMsgTooLong);
     }
+
+    #[test]
+    fn de_unsupport() {
+        e_de::<std::collections::BTreeMap<usize, usize>>(&[], Error::Unsupport("map"));
+    }
 }

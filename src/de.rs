@@ -107,7 +107,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     type Error = Error;
 
     fn deserialize_any<V: Visitor<'de>>(self, _v: V) -> Result<V::Value> {
-        Err(Error::Unsupport("Any"))
+        Err(Error::Unsupport("any"))
     }
 
     fn deserialize_bool<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value>
