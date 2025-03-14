@@ -22,9 +22,9 @@ store as 4 bytes.
 *** f64
 store as 8 bytes.
 *** char
-as string with length of 1.
+as string
 *** string
-encoded with 3 bit length, followed by array of bytes.
+encoded with 4 bit length, followed by array of bytes.
 *** byte array
 same as string.
 *** option
