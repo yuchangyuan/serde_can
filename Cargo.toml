@@ -13,7 +13,7 @@ readme = "README.org"
 categories = ["embedded", "hardware-support", "no-std"]
 
 [features]
-default = []
+default = ["embedded-can"]
 
 [dependencies]
 embedded-can = { version = "0.4.1", optional = true }
