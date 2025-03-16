@@ -12,9 +12,7 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Debug, thiserror_no_std::Error, PartialEq)]
 pub enum Error {
-    #[error("this type not exist for the group")]
-    EncMsgIdNotExist,
-    #[error("node_id out of range, {0} > 2**{1}")]
+   #[error("node_id out of range, {0} > 2**{1}")]
     EncNodeIdOutOfRange(u32, usize),
     #[error("can msg id of {0} out of range")]
     EncCanIdOutOfRange(u32),
@@ -28,10 +26,13 @@ pub enum Error {
     SerdeErr(crate::Error),
 }
 
+// -------------------------------------- msg list
 pub trait List: private::Sealed {
     fn msg_id<T: Any>() -> i32;
     const LEN: usize;
 }
+
+pub trait Elem<T: List> {}
 
 mod private {
     use super::{List, Cons, Nil};
@@ -66,6 +67,38 @@ impl <H: Any, T: List> List for Cons<H, T> {
     }
 }
 
+#[macro_export]
+macro_rules! node_group_msg_list {
+    [] => { Nil };
+
+    [ $head:ty ] => { Cons<$head, Nil> };
+
+    [ $head:ty, $( $tail:ty ),+ ] => {
+        Cons<$head, $crate::node_group_msg_list![$( $tail ),+]>
+    };
+}
+
+#[macro_export]
+macro_rules! node_group_msg_impl_elem {
+    ( $tp: ident, [$h: ty]) => {
+        impl Elem<$tp> for $h {}
+    };
+
+    ( $tp: ident, [$h: ty, $( $t: ty ),*] ) => {
+        impl Elem<$tp> for $h {}
+        $crate::node_group_msg_impl_elem!{$tp, [$( $t ),*]}
+    }
+}
+
+#[macro_export]
+macro_rules! node_group_msg_def {
+    ( $tp: ident, [$( $e: ty ),*] ) => {
+        type $tp = $crate::node_group_msg_list![$( $e ),*];
+        $crate::node_group_msg_impl_elem!{$tp, [$( $e ),*]}
+    }
+}
+
+// ---------------------------------- node group
 type NodeId = u32;
 type MsgId  = u32;
 
@@ -84,7 +117,7 @@ impl <L: List, const BASE: u32, const NODE_ID_LEN: usize, const MSG_ID_LEN: usiz
     const NODE_ID_MASK: u32 = (((1 << NODE_ID_LEN) - 1) as u32) << MSG_ID_LEN;
     const BASE_MASK: u32    = !(Self::MSG_ID_MASK | Self::NODE_ID_MASK);
 
-    pub fn msg_id<X: Any>() -> i32 { L::msg_id::<X>() }
+    pub fn msg_id<X: Any + Elem<L>>() -> i32 { L::msg_id::<X>() }
 
     fn id2raw(id: &Id) -> u32 {
         match id {
@@ -106,9 +139,8 @@ impl <L: List, const BASE: u32, const NODE_ID_LEN: usize, const MSG_ID_LEN: usiz
         Self { name, _phantom: PhantomData {} }
     }
 
-    pub fn encode_ext<F: Frame, X: Serialize + Any>(node_id: NodeId, x: &X) -> Result<F, Error> {
+    pub fn encode_ext<F: Frame, X: Serialize + Any + Elem<L>>(node_id: NodeId, x: &X) -> Result<F, Error> {
         let msg_id = Self::msg_id::<X>();
-        if msg_id < 0 { return Err(Error::EncMsgIdNotExist); }
 
         let can_id = BASE | (node_id << (MSG_ID_LEN as u32)) | (msg_id as u32);
         let Some(ext_id) = ExtendedId::new(can_id) else {
@@ -135,7 +167,7 @@ impl <L: List, const BASE: u32, const NODE_ID_LEN: usize, const MSG_ID_LEN: usiz
         Some((node_id, msg_id))
     }
 
-    pub fn decode<'a, T: Any + Deserialize<'a>, F: Frame>(f: &'a F) -> Result<(NodeId, T), Error> {
+    pub fn decode<'a, T: Any + Deserialize<'a> + Elem<L>, F: Frame>(f: &'a F) -> Result<(NodeId, T), Error> {
         let Some((node_id, msg_id)) = Self::extract(&f.id()) else {
             return Err(Error::DecNodeGroupMismatch);
         };
@@ -190,9 +222,8 @@ mod test {
         }
     }
 
-
-    type T4 = Cons<isize, Cons<u8, Cons<i8, Cons<usize, Nil>>>>;
-    type T5 = Cons<u32, T4>;
+    node_group_msg_def!(T4, [isize, u8, i8, usize]);
+    node_group_msg_def!(T5, [u32, isize, u8, i8, usize]);
 
     #[test]
     #[should_panic]
@@ -224,11 +255,11 @@ mod test {
         assert_eq!(T4::msg_id::<i8>(),    2);
         assert_eq!(T4::msg_id::<u8>(),    1);
         assert_eq!(T4::msg_id::<isize>(), 0);
-        assert_eq!(T4::msg_id::<u32>(),  -1);
+        //assert_eq!(T4::msg_id::<u32>(),  -1);
 
         assert_eq!(T5::msg_id::<usize>(), 4);
         assert_eq!(T5::msg_id::<u32>(),   0);
-        assert_eq!(T5::msg_id::<i32>(),  -1);
+        //assert_eq!(T5::msg_id::<i32>(),  -1);
     }
 
     #[test]
@@ -248,10 +279,6 @@ mod test {
         if let Ok(_) = G0::decode::<usize, _>(&f) {
             panic!("fail");
         }
-
-        if let Ok(_) = G0::decode::<u16, _>(&f) {
-            panic!("fail");
-        }
     }
 
     #[test]
@@ -260,7 +287,6 @@ mod test {
         type G1 = NodeGroup::<T4, 0x1_1234_560, 3, 3>;
         type G2 = NodeGroup::<T4, 0x2_0000_000, 3, 3>; // BASE error, should fail when call G2::new('')
 
-        assert_eq!(G1::encode_ext::<Frame, _>(0, &0u32), Err(Error::EncMsgIdNotExist));
         assert_eq!(G1::encode_ext::<Frame, _>(8, &0u8), Err(Error::EncNodeIdOutOfRange(8, 3)));
         assert_eq!(G2::encode_ext::<Frame, _>(0, &0u8), Err(Error::EncCanIdOutOfRange(0x2_0000_001)));
 
