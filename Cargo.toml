@@ -14,6 +14,7 @@ categories = ["embedded", "hardware-support", "no-std"]
 
 [features]
 default = ["embedded-can"]
+node-group = ["embedded-can"]
 
 [dependencies]
 embedded-can = { version = "0.4.1", optional = true }
