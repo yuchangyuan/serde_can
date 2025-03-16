@@ -28,9 +28,18 @@ pub enum Error {
     SerdeErr(crate::Error),
 }
 
-pub trait List {
+pub trait List: private::Sealed {
     fn msg_id<T: Any>() -> i32;
     const LEN: usize;
+}
+
+mod private {
+    use super::{List, Cons, Nil};
+    use core::any::Any;
+
+    pub trait Sealed {}
+    impl Sealed for Nil {}
+    impl <H: Any, T: List> Sealed for Cons<H, T> {}
 }
 
 #[derive(Default, Debug)]
