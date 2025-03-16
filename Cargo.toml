@@ -2,7 +2,7 @@
 name = "serde_can"
 version = "0.0.1"
 edition = "2024"
-license = "MIT OR APACHE-2.0"
+license = "MIT OR Apache-2.0"
 description = "Convenient library for Serialize & deserialize CAN message"
 homepage = "https://github.com/yuchangyuan/serde_can"
 repository = "https://github.com/yuchangyuan/serde_can"
