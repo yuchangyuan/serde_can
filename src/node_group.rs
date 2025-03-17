@@ -71,20 +71,20 @@ impl <H: Any, T: List> List for Cons<H, T> {
 macro_rules! node_group_msg_list {
     [] => { Nil };
 
-    [ $head:ty ] => { Cons<$head, Nil> };
+    [ $head:ty $(,)? ] => { Cons<$head, Nil> };
 
-    [ $head:ty, $( $tail:ty ),+ ] => {
+    [ $head:ty, $( $tail:ty ),+ $(,)? ] => {
         Cons<$head, $crate::node_group_msg_list![$( $tail ),+]>
     };
 }
 
 #[macro_export]
 macro_rules! node_group_msg_impl_elem {
-    ( $tp: ident, [$h: ty]) => {
+    ( $tp: ident, [$h: ty $(,)? ]) => {
         impl Elem<$tp> for $h {}
     };
 
-    ( $tp: ident, [$h: ty, $( $t: ty ),*] ) => {
+    ( $tp: ident, [$h: ty, $( $t: ty ),* $(,)? ] ) => {
         impl Elem<$tp> for $h {}
         $crate::node_group_msg_impl_elem!{$tp, [$( $t ),*]}
     }
@@ -92,7 +92,7 @@ macro_rules! node_group_msg_impl_elem {
 
 #[macro_export]
 macro_rules! node_group_msg_def {
-    ( $tp: ident, [$( $e: ty ),*] ) => {
+    ( $tp: ident, [$( $e: ty ),* $(,)? ] ) => {
         type $tp = $crate::node_group_msg_list![$( $e ),*];
         $crate::node_group_msg_impl_elem!{$tp, [$( $e ),*]}
     }
@@ -223,7 +223,7 @@ mod test {
     }
 
     node_group_msg_def!(T4, [isize, u8, i8, usize]);
-    node_group_msg_def!(T5, [u32, isize, u8, i8, usize]);
+    node_group_msg_def!(T5, [u32, isize, u8, i8, usize,]);
 
     #[test]
     #[should_panic]
